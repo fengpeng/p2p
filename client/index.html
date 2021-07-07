@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .video-container video {
+      width: 80%;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container">
+    <video id="local-video"></video>
+    <video id="remote-video"></video>
+  </div>
+  <button id="start">Start!</button>
+  <script type="module">
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    const constraints = { video: true, audio: true };
+    document.querySelector('#start').addEventListener('click', () => {
+      navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(stream => {
+          localVideo.srcObject = stream;
+          localVideo.play();
+        })
+        .catch(console.error);
+    });
+  </script>
+</body>
+</html>
