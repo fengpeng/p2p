@@ -7,7 +7,7 @@
   <title>Document</title>
   <style>
     .video-container video {
-      width: 80%;
+      width: 40%;
       background-color: black;
     }
   </style>
@@ -31,6 +31,17 @@
         })
         .catch(console.error);
     });
+
+    const ws = new WebSocket('ws://localhost:8000/');
+    ws.addEventListener('open', (event) => {
+      console.log('ws open');
+      ws.send('Hello Socket');
+    });
+    ws.addEventListener('message', (event) => {
+      console.log('ws message', event.data);
+    });
+    ws.addEventListener('error', (error) => console.log(error));
+
   </script>
 </body>
 </html>
