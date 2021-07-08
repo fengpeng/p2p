@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .video-container video {
+      width: 40%;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container">
+    <video id="local-video"></video>
+    <video id="remote-video"></video>
+  </div>
+  <script type="module">
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
+    const constraints = { video: true, audio: true };
+  
+    const ws = new WebSocket('ws://localhost:8000/');
+    ws.addEventListener('open', (event) => {});
+    ws.addEventListener('message', (event) => {
+      console.log('ws message', event.data);
+    });
+
+    const peer = new RTCPeerConnection();
+    peer.addEventListener('icecandidate', e => {
+      console.log('local connection ICE candidate: ', e.candidate);
+    });
+
+    peer.addEventListener('track', e => {
+      console.log('remote stream');
+      if (e.streams) {
+        remoteVideo.srcObject = e.streams[0];
+      }
+    });
+
+    function init() {
+      navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(stream => {
+          localVideo.srcObject = stream;
+          localVideo.play();
+          stream.getTracks().forEach(track => peer.addTrack(track));
+          return peer.createAnswer();
+        })
+        .then(async (desc) => {
+          ws.send(JSON.stringify(desc));
+          await peer.setLocalDescription(desc);
+        })
+        .catch(console.error);
+    }
+
+
+  </script>
+</body>
+</html>
