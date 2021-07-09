@@ -11,10 +11,18 @@ app.get('/', (req, res) => {
   const indexPath = path.resolve(__dirname, '../', 'client/index.html');
   res.sendFile(indexPath);
 });
+app.get('/join', (req, res) => {
+  const indexPath = path.resolve(__dirname, '../', 'client/join.html');
+  res.sendFile(indexPath);
+});
 
 app.ws('/', (ws, req) => {
   ws.on('message', message => {
-    console.log(message);
+    instance.getWss().clients.forEach(client => {
+      if (client !== ws) {
+        client.send(message);
+      }
+    });
   });
 });
 
