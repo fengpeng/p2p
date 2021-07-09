@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Caller Page</title>
   <style>
     .video-container video {
       width: 40%;
@@ -18,65 +18,79 @@
     <video id="remote-video"></video>
   </div>
   <button id="start">Start!</button>
-  <script type="module">
+  <script>
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
     const constraints = { video: true, audio: true };
-    const ws = new WebSocket('ws://localhost:8000/');
-    ws.addEventListener('open', (event) => console.log('ws open'));
-    ws.addEventListener('message', (event) => {
-      const message = JSON.parse(event.data);
-      const type = message.type;
-      if (type === 'answer') {
-        peer.setRemoteDescription(new RTCSessionDescription({ type, sdp: message.sdp }));
-        return;
-      }
-      if (type === 'answer_ice') {
-        peer.addIceCandidate(message.iceCandidate);
-        return;
-      }
-    });
-    ws.addEventListener('error', (error) => console.log(error));
-
     const peer = new RTCPeerConnection();
-    peer.addEventListener('icecandidate', e => {
-      console.log('local connection ICE candidate: ', e.candidate);
-      if (e.candidate) {
-        ws.send(JSON.stringify({ type: 'caller_ice',  iceCandidate: e.candidate }));
-      }
-    });
+    const ws = new WebSocket('ws://localhost:8000/');
+    
+    
+    function main() {
+      handleSocket();
+      handlerPeerConnection();
+      handleUI();
+    }
 
-    peer.addEventListener('track', e => {
-      console.log('remote stream');
-      if (e.streams) {
-        remoteVideo.srcObject = e.streams[0];
-      }
-    });
+    function handleSocket() {
+      ws.addEventListener('open', (event) => console.log('ws open'));
+      ws.addEventListener('message', (event) => {
+        const message = JSON.parse(event.data);
+        const type = message.type;
+        if (type === 'answer') {
+          peer.setRemoteDescription(new RTCSessionDescription({ type, sdp: message.sdp }));
+          return;
+        }
+        if (type === 'answer_ice') {
+          peer.addIceCandidate(message.iceCandidate);
+          return;
+        }
+      });
+      ws.addEventListener('error', (error) => console.log(error));
+    }
 
-    document.querySelector('#start').addEventListener('click', () => {
-      navigator.mediaDevices
-        .getUserMedia(constraints)
-        .then(stream => {
-          localVideo.srcObject = stream;
-          stream.getTracks().forEach(track => peer.addTrack(track, stream));
-          return peer.createOffer()
-        })
-        .then(async (desc) => {
-          // console.log('offer is:', desc.toJSON());
-          ws.send(JSON.stringify(desc));
-          await peer.setLocalDescription(desc);
-        })
-        .catch(console.error);
-    });
+    function handlerPeerConnection() {
+      peer.addEventListener('icecandidate', e => {
+        console.log('local connection ICE candidate');
+        if (e.candidate) {
+          ws.send(JSON.stringify({ type: 'caller_ice',  iceCandidate: e.candidate }));
+        }
+      });
+  
+      peer.addEventListener('track', e => {
+        console.log('remote stream');
+        if (e.streams) {
+          remoteVideo.srcObject = e.streams[0];
+        }
+      });
+    }
 
-    localVideo.onloadeddata = () => {
-      localVideo.play();
-    };
+    function handleUI() {
+      document.querySelector('#start').addEventListener('click', () => {
+        navigator.mediaDevices
+          .getUserMedia(constraints)
+          .then(stream => {
+            localVideo.srcObject = stream;
+            stream.getTracks().forEach(track => peer.addTrack(track, stream));
+            return peer.createOffer()
+          })
+          .then(async (desc) => {
+            ws.send(JSON.stringify(desc));
+            await peer.setLocalDescription(desc);
+          })
+          .catch(console.error);
+      });
+      localVideo.onloadeddata = () => {
+        localVideo.play();
+      };
+  
+      remoteVideo.onloadeddata = () => {
+        remoteVideo.play();
+      };
+    }
 
-    remoteVideo.onloadeddata = () => {
-      remoteVideo.play();
-    };
 
+    main();
   </script>
 </body>
 </html>
