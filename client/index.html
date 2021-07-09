@@ -22,20 +22,28 @@
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
     const constraints = { video: true, audio: true };
-  
     const ws = new WebSocket('ws://localhost:8000/');
-    ws.addEventListener('open', (event) => {
-      console.log('ws open');
-      ws.send('Hello Socket');
-    });
+    ws.addEventListener('open', (event) => console.log('ws open'));
     ws.addEventListener('message', (event) => {
-      console.log('ws message', event.data);
+      const message = JSON.parse(event.data);
+      const type = message.type;
+      if (type === 'answer') {
+        peer.setRemoteDescription(new RTCSessionDescription({ type, sdp: message.sdp }));
+        return;
+      }
+      if (type === 'answer_ice') {
+        peer.addIceCandidate(message.iceCandidate);
+        return;
+      }
     });
     ws.addEventListener('error', (error) => console.log(error));
 
     const peer = new RTCPeerConnection();
     peer.addEventListener('icecandidate', e => {
       console.log('local connection ICE candidate: ', e.candidate);
+      if (e.candidate) {
+        ws.send(JSON.stringify({ type: 'caller_ice',  iceCandidate: e.candidate }));
+      }
     });
 
     peer.addEventListener('track', e => {
@@ -50,18 +58,24 @@
         .getUserMedia(constraints)
         .then(stream => {
           localVideo.srcObject = stream;
-          localVideo.play();
-          stream.getTracks().forEach(track => peer.addTrack(track));
+          stream.getTracks().forEach(track => peer.addTrack(track, stream));
           return peer.createOffer()
         })
         .then(async (desc) => {
           // console.log('offer is:', desc.toJSON());
-          await peer.setLocalDescription(desc);
           ws.send(JSON.stringify(desc));
+          await peer.setLocalDescription(desc);
         })
         .catch(console.error);
     });
 
+    localVideo.onloadeddata = () => {
+      localVideo.play();
+    };
+
+    remoteVideo.onloadeddata = () => {
+      remoteVideo.play();
+    };
 
   </script>
 </body>
