@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>snapshot</title>
+</head>
+<body>
+  <div>
+    <video id="video" width="600" height="400"></video>
+  </div>
+  <button id="button">snapshot</button>
+  <div>
+    <canvas id="canvas"></canvas>
+  </div>
+  <button id="save">Save</button>
+  <script>
+    const video = document.querySelector('#video');
+    const button = document.querySelector('#button');
+    const save = document.querySelector('#save');
+    const canvas = document.querySelector('#canvas');
+    const constraints = { video: true, audio: false };
+
+    button.addEventListener('click', (event) => {
+      canvas.width = video.width;
+      canvas.height = video.height;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    });
+
+    save.addEventListener('click', (event) => {
+      const data = canvas.toDataURL('image/png').replace("image/png", "image/octet-stream");
+      window.location.href = data;
+
+      // let link = document.createElement('a')
+      // link.setAttribute('download', 'snapshot.png');
+      // link.href = data;
+      // document.body.appendChild(link);
+      // link.click()
+      // document.body.removeChild(link);
+      // link = null;
+    });
+
+    navigator.mediaDevices
+      .getUserMedia(constraints)
+      .then(stream => {
+        video.srcObject = stream
+        video.play();
+      })
+      .catch(console.error);
+    
+  </script>
+</body>
+</html>

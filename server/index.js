@@ -15,6 +15,10 @@ app.get('/join', (req, res) => {
   const indexPath = path.resolve(__dirname, '../', 'client/join.html');
   res.sendFile(indexPath);
 });
+app.get('/snapshot', (req, res) => {
+  const indexPath = path.resolve(__dirname, '../', 'client/snapshot.html');
+  res.sendFile(indexPath);
+});
 
 app.ws('/', (ws, req) => {
   ws.on('message', message => {
@@ -28,5 +32,5 @@ app.ws('/', (ws, req) => {
 
 
 app.listen(8000, () => {
-  console.log('listening 3000!');
+  console.log('listening 8000!');
 });
